@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Clients Dashboard</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .client {
+      border: 2px solid #333;
+      padding: 1rem;
+      background: white;
+      width: 200px;
+      border-radius: 8px;
+      transition: opacity 0.3s;
+    }
+
+    .client.inactive {
+      opacity: 0.4;
+    }
+
+    .color-box {
+      width: 100%;
+      height: 20px;
+      margin-bottom: 5px;
+      border: 1px solid #aaa;
+    }
+  </style>
+</head>
+<body>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>
