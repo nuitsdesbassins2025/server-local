@@ -39,13 +39,7 @@
     <h1>Envoyer un Message</h1>
     <form id="messageForm">
         <label for="destinataire">Destinataire:</label>
-        <select id="destinataire" multiple>
-            <option value="all">all</option>
-            <option value="none">none</option>
-            <option value="id01">id01</option>
-            <option value="pseudo01">pseudo01</option>
-            <option value="groupe01">groupe01</option>
-        </select>
+        <textarea id="destinataire" required></textarea>
 
         <label for="message">Message:</label>
         <textarea id="message" required></textarea>
@@ -71,7 +65,7 @@
                 const notificationCheckbox = document.getElementById('notification');
 
                 // Récupérer les destinataires sélectionnés
-                const destinataires = Array.from(destinataireSelect.selectedOptions).map(option => option.value);
+                const destinataires = destinataireSelect.value;
 
                 // Récupérer le message et l'état de la notification
                 const message = messageInput.value;
@@ -79,13 +73,13 @@
 
                 // Émettre l'événement au serveur
                 socket.emit('send_message', {
-                    target: "all", // Vous pouvez changer cela selon vos besoins
+                    target: destinataires, // Vous pouvez changer cela selon vos besoins
                     message: message,
                     notification: notification
                 });
 
                 console.log("Message envoyé :", {
-                    target: "all",
+                    target: destinataires,
                     message: message,
                     notification: notification
                 });
