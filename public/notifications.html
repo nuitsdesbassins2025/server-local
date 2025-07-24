@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Message Sender</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #messageForm {
+            display: flex;
+            flex-direction: column;
+            max-width: 400px;
+        }
+        select[multiple] {
+            height: auto;
+            padding: 5px;
+        }
+        textarea {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            height: 100px;
+        }
+        button {
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Envoyer un Message</h1>
+    <form id="messageForm">
+        <label for="destinataire">Destinataire:</label>
+        <select id="destinataire" multiple>
+            <option value="all">all</option>
+            <option value="none">none</option>
+            <option value="id01">id01</option>
+            <option value="pseudo01">pseudo01</option>
+            <option value="groupe01">groupe01</option>
+        </select>
+
+        <label for="message">Message:</label>
+        <textarea id="message" required></textarea>
+
+        <label for="notification">Notification:</label>
+        <input type="checkbox" id="notification">
+
+        <button type="button" id="envoyer">Envoyer</button>
+    </form>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Connexion à Socket.IO
+            const socket = io(); // Assurez-vous que votre serveur Socket.IO tourne à la même adresse
+            console.log("Connexion à Socket.IO établie");
+
+            const envoyerButton = document.getElementById('envoyer');
+
+            envoyerButton.addEventListener('click', () => {
+                const destinataireSelect = document.getElementById('destinataire');
+                const messageInput = document.getElementById('message');
+                const notificationCheckbox = document.getElementById('notification');
+
+                // Récupérer les destinataires sélectionnés
+                const destinataires = Array.from(destinataireSelect.selectedOptions).map(option => option.value);
+
+                // Récupérer le message et l'état de la notification
+                const message = messageInput.value;
+                const notification = notificationCheckbox.checked;
+
+                // Émettre l'événement au serveur
+                socket.emit('send_message', {
+                    target: "all", // Vous pouvez changer cela selon vos besoins
+                    message: message,
+                    notification: notification
+                });
+
+                console.log("Message envoyé :", {
+                    target: "all",
+                    message: message,
+                    notification: notification
+                });
+
+                // Optionnel : Effacer le formulaire après l'envoi
+                messageInput.value = '';
+                // notificationCheckbox.checked = false;
+                // destinataireSelect.selectedIndex = -1;
+            });
+        });
+    </script>
+</body>
+</html>

@@ -14,7 +14,7 @@ server.listen(4000, () => {
   console.log('Local server UI running on http://localhost:4000');
 });
 
-const socketToRemote = require('socket.io-client')('http://localhost:3000'); // Connexion au serveur central
+const socketToRemote = require('socket.io-client')('https://nuit-des-bassins-client-9b7778c21473.herokuapp.com'); // Connexion au serveur central
 
 socketToRemote.on('connect', () => {
   console.log('Connected to central server');
