@@ -1,85 +1,72 @@
-import WebSocket from "ws";
-import fs from "fs/promises";
-import { createDevice } from "@rnbo/js";
+import { io } from "socket.io-client";
+import { createDevice, MessageEvent, TimeNow } from "@rnbo/js";
+import { readFile } from "fs/promises";
+import { AudioContext } from "node-web-audio-api";
 
-// --- Initialisation RNBO ---
-
-let context;
-let device;
+let rnboDevice = null;
 
 async function initRNBO() {
-    const patchJSON = JSON.parse(await fs.readFile(""./export/dodgeball_server.export.json", "utf-8"));
+    const patchExport = JSON.parse(await readFile("./export/dodgeball.export.json", "utf-8"));
+    const context = new AudioContext();
 
-    context = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
-    device = await createDevice({ context, patchExport: patchJSON });
+    rnboDevice = await createDevice({ context, patchExport });
+    rnboDevice.node.connect(context.destination);
 
-    device.node.connect(context.destination);
-
-    console.log("🎛️ RNBO initialisé avec succès.");
-    return device;
+    console.log("✅ RNBO initialisé");
+    return rnboDevice;
 }
-
-// --- Fonction pour déclencher un son + pan ---
-
-function triggerVoice(tag, pan = 0) {
-    const now = context.currentTime;
-
-    // Bang vers le déclencheur (ex: "mur", "sol", etc.)
-    device.scheduleEvent({
-        type: "message",
-        tag,
-        time: now,
-        payload: [1]
-    });
-
-    // Contrôle de spatialisation
-    device.scheduleEvent({
-        type: "message",
-        tag: "pan",
-        time: now,
-        payload: [pan]
-    });
-
-    console.log(`🎵 ${tag} déclenché (pan: ${pan.toFixed(2)})`);
-}
-
-// --- WebSocket Server ---
-// à ajouter : parsing json pour data : tags, id_joueur, Position, etc.
-const validTags = ["sol", "mur", "joueur", "bouclier"];
 
 function clamp(val, min, max) {
     return Math.max(min, Math.min(val, max));
 }
 
-const wss = new WebSocket.Server({ port: 8080 });
+// 🔈 Envoie le message [1] à "mur", "joueur" ou "bouclier" + position stéréo via "pan_*"
+function triggerEvent(type, x) {
+    if (!["mur", "joueur", "bouclier"].includes(type)) {
+        console.warn("⚠️ Événement inconnu :", type);
+        return;
+    }
 
-wss.on("connection", (ws) => {
-    console.log("🔌 Client connecté");
+    const now = TimeNow;
+    const panValue = (clamp(x, 0, 1) * 2) - 1; // map x ∈ [0,1] → pan ∈ [-1,1]
 
-    ws.on("message", (message) => {
-        try {
-            const data = JSON.parse(message.toString());
-            const type = data.event?.toLowerCase();
-            const x = clamp(parseFloat(data.x), 0, 1);
+    // pan_mur, pan_joueur, pan_bouclier
+    const panEvent = new MessageEvent(now, `pan_${type}`, [panValue]);
 
-            if (!validTags.includes(type)) {
-                console.warn("❓ Type d’événement inconnu:", type);
-                return;
-            }
+    // mur, joueur, bouclier
+    const trigger = new MessageEvent(now, type, [1]);
 
-            const pan = (x * 2) - 1;
-            triggerVoice(type, pan);
-        } catch (e) {
-            console.error("❌ Erreur traitement message :", e);
-        }
-    });
+    rnboDevice.scheduleEvent(panEvent);
+    rnboDevice.scheduleEvent(trigger);
+}
 
-    ws.on("close", () => {
-        console.log("❌ Client déconnecté");
-    });
-});
-
-// --- Lancer RNBO et le serveur ---
+// 🔌 Connexion au serveur Python via Socket.IO
+const socket = io("http://localhost:5000");
 
 await initRNBO();
-console.log("🚀 WebSocket prêt sur ws://localhost:8080");
+
+socket.on("connect", () => {
+    console.log("🔌 Connecté au serveur Python");
+});
+
+// Réception de l'événement "mur"
+socket.on("mur", (data) => {
+    const x = parseFloat(data?.x ?? 0.5);
+    triggerEvent("mur", x);
+});
+
+// Réception de l'événement "joueur"
+socket.on("joueur", (data) => {
+    const x = parseFloat(data?.x ?? 0.5);
+    triggerEvent("joueur", x);
+});
+
+// Réception de l'événement "bouclier"
+socket.on("bouclier", (data) => {
+    const x = parseFloat(data?.x ?? 0.5);
+    triggerEvent("bouclier", x);
+});
+
+socket.on("disconnect", () => {
+    console.log("❌ Déconnecté");
+});
