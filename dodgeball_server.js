@@ -8,7 +8,7 @@ let context;
 let device;
 
 async function initRNBO() {
-    const patchJSON = JSON.parse(await fs.readFile("./export/ndb25.json", "utf-8"));
+    const patchJSON = JSON.parse(await fs.readFile(""./export/dodgeball_server.export.json", "utf-8"));
 
     context = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
     device = await createDevice({ context, patchExport: patchJSON });
